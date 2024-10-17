@@ -52,5 +52,5 @@ def load_bais(type=Literal["IF", "IC", "IM", "IH"]) -> pd.DataFrame:
             "年化基差(%)",
         ]
     ]
-    data_df["日期"] = pd.to_datetime(data_df["日期"])
+    # data_df["日期"] = pd.to_datetime(data_df["日期"])
     return data_df
