@@ -1,0 +1,38 @@
+name: 10min更新一次
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '*/10 * * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@main
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: run start.sh
+        run: |
+          pip install -r ./requirements.txt
+          bash ./start.sh
+          
+      - name: Set timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +'%Y-%m-%d %H:%M')"
+
+      - name: Git add and commit
+        run: |
+          git config --global user.email "ouweijie123@outlook.com"
+          git config --global user.name "update actioner"
+          git add .
+          git commit -m "update_halfhourly_${{ steps.timestamp.outputs.timestamp }}"
+
+      - name: GitHub Push
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.REPO_TOKEN }}
+          branch: master
