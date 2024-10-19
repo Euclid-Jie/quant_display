@@ -128,20 +128,20 @@ if __name__ == "__main__":
         )
     )
 
-    # Plot 大小盘相对强弱
-    big_df = ak.index_hist_sw(symbol="801811", period="day")
-    small_df = ak.index_hist_sw(symbol="801813", period="day")
-    big_df["rtn"] = big_df["收盘"].pct_change()
-    small_df["rtn"] = small_df["收盘"].pct_change()
-    big_de_small = big_df["rtn"] - small_df["rtn"]
-    combined_fig.append(
-        plot_line_chart(
-            big_df["日期"].values[-100:],
-            big_de_small.values[-100:],
-            "大小盘相对强弱",
-            "大小盘相对强弱",
-        )
-    )
+    # # Plot 大小盘相对强弱
+    # big_df = ak.index_hist_sw(symbol="801811", period="day")
+    # small_df = ak.index_hist_sw(symbol="801813", period="day")
+    # big_df["rtn"] = big_df["收盘"].pct_change()
+    # small_df["rtn"] = small_df["收盘"].pct_change()
+    # big_de_small = big_df["rtn"] - small_df["rtn"]
+    # combined_fig.append(
+    #     plot_line_chart(
+    #         big_df["日期"].values[-100:],
+    #         big_de_small.values[-100:],
+    #         "大小盘相对强弱",
+    #         "大小盘相对强弱",
+    #     )
+    # )
 
     # Plot 价值VS成长相对强弱
     cni_399371 = ak.index_hist_cni(
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     cni_399370["rtn"] = cni_399370["收盘价"].pct_change()
     combined_fig.append(
         plot_line_chart(
-            big_df["日期"].values[-100:],
+            cni_399371["日期"].values[-100:],
             cni_399371["rtn"].values[-100:] - cni_399370["rtn"].values[-100:],
             "价值VS成长相对强弱",
             "价值VS成长相对强弱",
