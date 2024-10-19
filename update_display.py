@@ -1,15 +1,14 @@
 import numpy as np
 import pandas as pd
-import akshare as ak
-from datetime import datetime, timedelta
 from pyecharts.charts import Line, Grid
 from pyecharts import options as opts
-from pyecharts.globals import ThemeType
-from unitls import load_bais
+from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 # Function to generate a line chart
-def plot_line_chart(x_data, y_data, title, name):
+def plot_line_chart(x_data, y_data, name):
     line = (
         Line(
             init_opts={
@@ -91,14 +90,6 @@ def plot_dual_axis_chart(data, title, key):
 
 
 # Load historical data for 沪深300
-def load_bench300_hist():
-    hist_df = ak.stock_zh_index_hist_csindex(
-        symbol="000300",
-        start_date=(datetime.now() - timedelta(days=2 * 365)).strftime("%Y%m%d"),
-        end_date=datetime.now().strftime("%Y%m%d"),
-    )
-    # hist_df["日期"] = pd.to_datetime(hist_df["日期"])
-    return hist_df
 
 
 # Main execution and plotting
@@ -106,12 +97,11 @@ if __name__ == "__main__":
     combined_fig = []
 
     # Plot 沪深300指数成交金额
-    hist_of_bench300_df = load_bench300_hist()
+    hist_of_bench300_df = pd.read_csv(Path(r"data/hist_of_000300.csv"))
     combined_fig.append(
         plot_line_chart(
             hist_of_bench300_df["日期"],
             hist_of_bench300_df["成交金额"],
-            "沪深300指数成交金额",
             "成交金额",
         )
     )
@@ -123,7 +113,6 @@ if __name__ == "__main__":
         plot_line_chart(
             hist_of_bench300_df["日期"][249:],
             percentile,
-            "沪深300指数成交金额分位数",
             "成交金额分位数",
         )
     )
@@ -144,16 +133,8 @@ if __name__ == "__main__":
     # )
 
     # Plot 价值VS成长相对强弱
-    cni_399371 = ak.index_hist_cni(
-        symbol="399371",
-        start_date=(datetime.now() - timedelta(days=2 * 365)).strftime("%Y%m%d"),
-        end_date=datetime.now().strftime("%Y%m%d"),
-    )
-    cni_399370 = ak.index_hist_cni(
-        symbol="399370",
-        start_date=(datetime.now() - timedelta(days=2 * 365)).strftime("%Y%m%d"),
-        end_date=datetime.now().strftime("%Y%m%d"),
-    )
+    cni_399371 = pd.read_csv(Path(r"data/hist_of_399371.csv"))
+    cni_399370 = pd.read_csv(Path(r"data/hist_of_399370.csv"))
     cni_399371["rtn"] = cni_399371["收盘价"].pct_change()
     cni_399370["rtn"] = cni_399370["收盘价"].pct_change()
     combined_fig.append(
@@ -161,18 +142,15 @@ if __name__ == "__main__":
             cni_399371["日期"].values[-100:],
             cni_399371["rtn"].values[-100:] - cni_399370["rtn"].values[-100:],
             "价值VS成长相对强弱",
-            "价值VS成长相对强弱",
         )
     )
 
     # Plot IC and IM data with dual Y-axis
-    IC_data = load_bais("IC")
-    IM_data = load_bais("IM")
+    IC_data = pd.read_csv(Path(r"data/IC_data.csv"))
+    IM_data = pd.read_csv(Path(r"data/IM_data.csv"))
 
     for key, data in {"IC年化基差(%)": IC_data, "IM年化基差(%)": IM_data}.items():
-        combined_fig.append(
-            plot_line_chart(data["日期"], data["年化基差(%)"], key, key)
-        )
+        combined_fig.append(plot_line_chart(data["日期"], data["年化基差(%)"], key))
 
     html = f"""<html>
         <head>
@@ -199,9 +177,17 @@ if __name__ == "__main__":
                     background-color: #f59e00;
                     color: white;
                 }}
+                #timestamp {{
+                    position: absolute;
+                    top: 10px;
+                    left: 10px;
+                    font-size: 12px;
+                    color: #999;
+                }}
             </style>
         </head>
         <body>
+            <div id="timestamp">Last Updated: {datetime.now(ZoneInfo('Asia/Shanghai')).strftime("%Y-%m-%d %H:%M:%S")}</div>
             {"".join([chart.render_embed() for chart in combined_fig])}
         </body>
     </html>"""
