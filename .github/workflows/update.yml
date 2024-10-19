@@ -35,18 +35,10 @@ jobs:
         run: |
           bash ./update_display.sh
 
-      - name: Check for changes
-        id: git-status
-        run: |
-          git diff --quiet || echo "::set-output name=changes::true"
-
       - name: Git add and commit
         run: |
-          if [[ "${{ steps.git-status.outputs.changes }}" == "true" ]]; then
-            git add .
-            git commit -m "update_data_15minly_${{ steps.timestamp.outputs.timestamp }}"
-          else
-            echo "No changes detected. Skipping commit."
+          git add .
+          git commit -m "update_data_15minly_${{ steps.timestamp.outputs.timestamp }}"
 
       - name: GitHub Push
         uses: ad-m/github-push-action@master

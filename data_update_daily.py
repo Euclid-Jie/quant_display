@@ -2,6 +2,7 @@ import akshare as ak
 import pandas as pd
 from pathlib import Path
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Literal
 
 bench_load_dict = {
@@ -23,6 +24,9 @@ def load_bench_hist(
         symbol=bench_symbol,
         start_date=(datetime.now() - timedelta(days=3 * 365)).strftime("%Y%m%d"),
         end_date=datetime.now().strftime("%Y%m%d"),
+    )
+    hist_df["update_time"] = datetime.now(ZoneInfo("Asia/Shanghai")).strftime(
+        "%Y-%m-%d %H:%M:%S"
     )
     hist_df.to_csv(
         Path(f"data/hist_of_{bench_symbol}.csv"), index=False, encoding="utf-8-sig"
