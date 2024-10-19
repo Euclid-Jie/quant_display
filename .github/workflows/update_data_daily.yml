@@ -24,7 +24,6 @@ jobs:
           git config --global user.email "ouweijie123@outlook.com"
           git config --global user.name "update actioner"
           git checkout gh_pages
-          git pull
 
       - name: run update_data_daily.sh
         run: |
@@ -33,6 +32,7 @@ jobs:
   
       - name: Git add and commit
         run: |
+          git pull
           git add .
           git commit -m "update_data_daily_${{ steps.timestamp.outputs.timestamp }}"
 
