@@ -1,14 +1,16 @@
 import numpy as np
 import pandas as pd
+from typing import List
 from pyecharts.charts import Line, Grid
 from pyecharts import options as opts
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from utils import load_hist_data, load_bench_cons, calculate_percentile
 
 
 # Function to generate a line chart
-def plot_line_chart(x_data, y_data, name):
+def plot_line_chart(x_data: np.ndarray, y_data: np.ndarray, name):
     line = (
         Line(
             init_opts={
@@ -35,18 +37,6 @@ def plot_line_chart(x_data, y_data, name):
         )
     )
     return line
-
-
-# Function to calculate rolling percentile
-def calculate_percentile(data, window_size):
-    data_windows = np.lib.stride_tricks.as_strided(
-        data, (len(data) - window_size + 1, window_size), (data.itemsize, data.itemsize)
-    )
-    percentile = (
-        np.sum(data_windows <= data_windows[:, -1][:, None], axis=1)
-        / data_windows.shape[1]
-    )
-    return percentile
 
 
 # Function to add dual Y-axis chart
@@ -96,26 +86,56 @@ def plot_dual_axis_chart(data, title, key):
 if __name__ == "__main__":
     combined_fig = []
 
-    # Plot 沪深300指数成交金额
-    hist_of_bench300_df = pd.read_csv(Path(r"data/hist_of_000300.csv"))
-    combined_fig.append(
-        plot_line_chart(
-            hist_of_bench300_df["日期"],
-            hist_of_bench300_df["成交金额"],
-            "成交金额",
+    # Plot 指数成交金额
+    for bench, name in {
+        "000300": "沪深300",
+        "000905": "中证500",
+        "000852": "中证1000",
+    }.items():
+        hist_bench_df = pd.read_csv(Path(f"data/hist_of_{bench}.csv"))
+        combined_fig.append(
+            plot_line_chart(
+                hist_bench_df["日期"].values,
+                hist_bench_df["成交金额"].values,
+                f"{name}成交金额",
+            )
         )
-    )
 
-    # Calculate and plot 250-day rolling 成交金额 percentile
-    VolumeRMB = hist_of_bench300_df["成交金额"].values
-    percentile = calculate_percentile(VolumeRMB, 250)
-    combined_fig.append(
-        plot_line_chart(
-            hist_of_bench300_df["日期"][249:],
-            percentile,
-            "成交金额分位数",
+        # Calculate and plot 250-day rolling 成交金额 percentile
+        VolumeRMB = hist_bench_df["成交金额"].values
+        percentile = calculate_percentile(VolumeRMB, 250)
+        combined_fig.append(
+            plot_line_chart(
+                hist_bench_df["日期"].values[249:],
+                percentile,
+                f"{name}成交金额分位数",
+            )
         )
-    )
+        # 计算成分股波动率
+        rtn = load_hist_data(indicator="rtn", symols=load_bench_cons(bench))
+        vol = rtn.std(axis=1).to_frame()
+        percentile = calculate_percentile(vol[0].values, 250)
+        combined_fig.append(
+            plot_line_chart(
+                vol.index.strftime("%Y-%m-%d")[249:],
+                percentile,
+                f"{name}成分股波动率分位数",
+            )
+        )
+        # 赚钱效应
+        bench_rtn = hist_bench_df[["日期", "涨跌幅"]].copy()
+        bench_rtn["涨跌幅"] = bench_rtn["涨跌幅"] / 100
+        bench_rtn = bench_rtn.set_index("日期").reindex(
+            index=rtn.index.strftime("%Y-%m-%d")
+        )
+        win_ratio = ((rtn.values[-250:, :] - bench_rtn.values[-250:]) > 0).mean(axis=1)
+        combined_fig.append(
+            plot_line_chart(
+                bench_rtn.index.values[-250:],
+                win_ratio,
+                f"{name}赚钱效应",
+            )
+        )
 
     # # Plot 大小盘相对强弱
     # big_df = ak.index_hist_sw(symbol="801811", period="day")
