@@ -1,46 +1,77 @@
-name: 15min更新一次
+name: 数据更新
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 手动触发
   schedule:
-  - cron: '*/15 * * * *'
+    - cron: '*/15 * * * *'  # 每15分钟执行一次
+    - cron: '0 0 * * *'      # 每天执行一次
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@main
+      # Checkout main branch to get the latest code
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 0
-          
+          ref: main  # Checkout main branch
+
       - name: Set timestamp
         id: timestamp
-        run: echo "::set-output name=timestamp::$(date +'%Y-%m-%d %H:%M')"
+        run: echo "timestamp=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_ENV
 
+      # run update_data_daily for daily schedule
+      - name: run update_data_daily
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
+        run: |
+          pip install -r ./requirements.txt
+          python3 ./data_update_daily.py
+
+      # run update_data for 15min schedule
       - name: run update_data
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
         run: |
           pip install -r ./requirements.txt
           python3 ./data_update.py
 
+      # run update_display for 15min schedule
       - name: run update_display
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
         run: |
           python3 ./update_display.py
 
-      - name: Git config and checkout
+      # Stash changes before switching branches
+      - name: Stash changes
+        run: git stash
+
+      # Switch to gh_pages branch for commit and push
+      - name: Checkout gh_pages branch
+        run: |
+          git checkout gh_pages
+          git pull origin gh_pages --rebase  # Pull latest gh_pages branch with rebase to avoid conflicts
+
+      # Apply stashed changes on gh_pages branch
+      - name: Apply stashed changes
+        run: |
+          git stash pop || echo "No stash to apply"
+
+      # Automatically resolve conflicts for conflicting files (including CSV files and others)
+      - name: Resolve merge conflicts
+        run: |
+          git status --porcelain | grep 'UU ' || echo "No conflicts"
+          for file in $(git status --porcelain | grep 'UU ' | awk '{print $2}'); do
+            git checkout --theirs $file
+            git add $file
+          done
+
+      - name: Git config and commit
         run: |
           git config --global user.email "ouweijie123@outlook.com"
           git config --global user.name "update actioner"
-          git stash
-          git checkout gh_pages
-
-      - name: Git add and commit
-        run: |
-          git pull
-          git stash pop
           git add .
-          git commit -m "update_data_15minly_${{ steps.timestamp.outputs.timestamp }}"
+          git commit -m "update_${{ env.timestamp }}" || echo "No changes to commit"
 
       - name: GitHub Push
         uses: ad-m/github-push-action@master
