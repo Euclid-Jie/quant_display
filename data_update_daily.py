@@ -135,6 +135,7 @@ def _update_single_hist_em(symbol: str, start_date: str, end_date: str):
 
 
 if __name__ == "__main__":
+    print("Updating daily data...")
     # 指数成分股,  仅支持中证指数
     for symbol_i in ["000300", "000905", "000852"]:
         load_bench_cons_csindex(symbol_i)
