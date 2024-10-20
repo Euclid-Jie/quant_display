@@ -25,10 +25,10 @@ jobs:
           git config --global user.name "update actioner"
           git checkout gh_pages
 
-      - name: run update_data_daily.sh
+      - name: run update_data_daily
         run: |
           pip install -r ./requirements.txt
-          bash ./update_data_daily.sh
+          python3 ./data_update_daily.py
   
       - name: Git add and commit
         run: |
