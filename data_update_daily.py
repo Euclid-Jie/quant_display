@@ -38,7 +38,7 @@ def load_bench_hist(
     hist_df = func(
         symbol=bench_symbol,
         start_date=(datetime.now() - timedelta(days=3 * 365)).strftime("%Y%m%d"),
-        end_date=datetime.now().strftime("%Y%m%d"),
+        end_date=(datetime.now() + timedelta(days=1)).strftime("%Y%m%d"),
     )
     hist_df["update_time"] = now_time()
     hist_df.to_csv(
@@ -59,7 +59,7 @@ def update_hist_em(hist_985_path: Path = Path(r"data/hist_985.h5")):
     print("Updating data from em...")
     data = pd.DataFrame()
     start_date = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
-    end_date = datetime.now().strftime("%Y%m%d")
+    end_date = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
     with concurrent.futures.ThreadPoolExecutor() as executor:
         results = []
         for symbol_i in symbol:
@@ -145,4 +145,4 @@ if __name__ == "__main__":
         load_bench_hist(func, symbol_i)
 
     # # 更新中证全指数行情
-    # update_hist_em(hist_985_path=Path(r"data/demo.h5"))
+    update_hist_em(hist_985_path=Path(r"data/demo.h5"))
