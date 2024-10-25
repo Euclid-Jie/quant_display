@@ -4,7 +4,6 @@ on:
   workflow_dispatch:  # 手动触发
   schedule:
     - cron: '*/15 * * * *'  # 每15分钟执行一次
-    - cron: '0 16 * * *'      # 每天执行一次
 
 jobs:
   build:
@@ -22,23 +21,14 @@ jobs:
         id: timestamp
         run: echo "timestamp=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_ENV
 
-      # run update_data_daily for daily schedule
-      - name: run update_data_daily
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
-        run: |
-          pip install -r ./requirements.txt
-          python3 ./data_update_daily.py
-
       # run update_data for 15min schedule
       - name: run update_data
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
         run: |
           pip install -r ./requirements.txt
           python3 ./data_update.py
 
       # run update_display for 15min schedule
       - name: run update_display
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
         run: |
           python3 ./update_display.py
 
