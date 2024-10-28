@@ -14,7 +14,7 @@ bench_hist_load_dict = {
     "000905": ak.stock_zh_index_hist_csindex,
     "000852": ak.stock_zh_index_hist_csindex,
     # 国证指数
-    "399370": ak.index_hist_cni,  # 国证价值
+    "399370": ak.index_hist_cni,  # 国证成长
     "399371": ak.index_hist_cni,  # 国证价值
 }
 
@@ -119,8 +119,6 @@ def update_hist_em(hist_985_path: Path = Path(r"data/hist_985.h5")):
             pivotDF=new_volumeRmb,
             pivotKey="volumeRmb",
         )
-    return data
-
 
 def _update_single_hist_em(symbol: str, start_date: str, end_date: str):
     assert len(symbol) == 6, "symbol must be 6 digits"
