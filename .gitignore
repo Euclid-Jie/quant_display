@@ -4,3 +4,5 @@ __pycache__
 .idea
 dirTreeCache
 test.ipynb
+test.html
+display_test.ipynb

@@ -12,7 +12,9 @@ import re
 import urllib.parse
 import json
 import uuid
-
+from typing import List
+from pyecharts.charts import Line, Grid
+from pyecharts import options as opts
 
 __all__ = [
     "load_bais",
@@ -133,3 +135,141 @@ def load_bais(type=Literal["IF", "IC", "IM", "IH"]) -> pd.DataFrame:
     ]
     # data_df["日期"] = pd.to_datetime(data_df["日期"])
     return data_df
+
+
+# Function to generate a line chart
+def plot_line_chart(
+    x_data: np.ndarray,
+    y_data: np.ndarray,
+    name: str,
+    range_start: int = 0,
+    range_end: int = 100,
+):
+    line = (
+        Line(
+            init_opts={
+                "width": "1560px",
+                "height": "600px",
+                "is_horizontal_center": True,
+            }
+        )
+        .add_xaxis(list(x_data))
+        .add_yaxis(name, list(y_data), is_symbol_show=False)
+        .set_global_opts(
+            xaxis_opts=opts.AxisOpts(type_="category"),
+            yaxis_opts=opts.AxisOpts(type_="value"),
+            legend_opts=opts.LegendOpts(
+                textstyle_opts=opts.TextStyleOpts(font_weight="bold", font_size=20)
+            ),
+            datazoom_opts=[
+                opts.DataZoomOpts(
+                    range_start=range_start, range_end=range_end, orient="horizontal"
+                )
+            ],
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        )
+        .set_series_opts(
+            linestyle_opts=opts.LineStyleOpts(width=3),
+        )
+    )
+    return line
+
+
+# Function to generate a line chart with multiple lines
+def plot_lines_chart(
+    x_data: np.ndarray,
+    ys_data: List[np.ndarray],
+    names: List[str],
+    range_start: int = 0,
+    range_end: int = 100,
+):
+    assert len(ys_data) == len(names), "Length of ys_data and names should be the same"
+    line = Line(
+        init_opts={
+            "width": "1560px",
+            "height": "600px",
+            "is_horizontal_center": True,
+        }
+    ).add_xaxis(list(x_data))
+    for i, y_data in enumerate(ys_data):
+        line.add_yaxis(names[i], list(y_data), is_symbol_show=False)
+
+    line.set_global_opts(
+        xaxis_opts=opts.AxisOpts(type_="category"),
+        yaxis_opts=opts.AxisOpts(type_="value"),
+        legend_opts=opts.LegendOpts(
+            textstyle_opts=opts.TextStyleOpts(font_weight="bold", font_size=20)
+        ),
+        datazoom_opts=[
+            opts.DataZoomOpts(
+                range_start=range_start, range_end=range_end, orient="horizontal"
+            )
+        ],
+        tooltip_opts=opts.TooltipOpts(trigger="axis"),
+    ).set_series_opts(
+        linestyle_opts=opts.LineStyleOpts(width=3),
+    )
+    return line
+
+
+# 两个y轴的折线图, 分别使用左右y轴不同的刻度
+def plot_dual_y_line_chart(
+    x_data: np.ndarray,
+    ys_data: list[np.ndarray],
+    names: List[str],
+    range_start: int = 0,
+    range_end: int = 100,
+):
+    assert (
+        len(ys_data) == len(names) == 2
+    ), "Length of ys_data and names should be the same"
+    y1_data, y2_data = ys_data
+    name1, name2 = names
+    assert len(y1_data) == len(
+        y2_data
+    ), "Length of y1_data and y2_data should be the same"
+    line = (
+        Line(
+            init_opts={
+                "width": "1560px",
+                "height": "600px",
+                "is_horizontal_center": True,
+            }
+        )
+        .add_xaxis(list(x_data))
+        .add_yaxis(name1, list(y1_data), yaxis_index=0, is_symbol_show=False)
+        .add_yaxis(name2, list(y2_data), yaxis_index=1, is_symbol_show=False)
+        .extend_axis(
+            yaxis=opts.AxisOpts(
+                type_="value",
+                axislabel_opts=opts.LabelOpts(is_show=True),
+                axistick_opts=opts.AxisTickOpts(is_show=True),
+                splitline_opts=opts.SplitLineOpts(is_show=False),  # 网格线不显示
+            )
+        )
+        .extend_axis(
+            yaxis=opts.AxisOpts(
+                type_="value",
+                axislabel_opts=opts.LabelOpts(is_show=True),
+                axistick_opts=opts.AxisTickOpts(is_show=True),
+                splitline_opts=opts.SplitLineOpts(is_show=False),  # 网格线不显示
+            )
+        )
+        .set_global_opts(
+            xaxis_opts=opts.AxisOpts(type_="category"),
+            legend_opts=opts.LegendOpts(
+                textstyle_opts=opts.TextStyleOpts(font_weight="bold", font_size=20)
+            ),
+            datazoom_opts=[
+                opts.DataZoomOpts(
+                    range_start=range_start, range_end=range_end, orient="horizontal"
+                )
+            ],
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        )
+        .set_series_opts(
+            linestyle_opts=opts.LineStyleOpts(width=3),
+        )
+    )
+
+    return line
