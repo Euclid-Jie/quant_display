@@ -1,11 +1,10 @@
 import akshare as ak
 import pandas as pd
-import numpy as np
 from pathlib import Path
 from utils import now_time, pivoted_df_insert_rows
 from H5DataBase import H5DataBase
 from datetime import datetime, timedelta
-from typing import Literal, List
+from typing import Literal
 import concurrent.futures
 
 bench_hist_load_dict = {
