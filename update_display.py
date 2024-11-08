@@ -20,6 +20,7 @@ if __name__ == "__main__":
 
     # Plot 指数成交金额
     for bench, name in {
+        "000985": "中证全指",
         "000300": "沪深300",
         "000905": "中证500",
         "000852": "中证1000",
@@ -49,12 +50,15 @@ if __name__ == "__main__":
             )
         )
         # 赚钱效应
+        # NOTE: bench rtn 只会有前一天的数据, 而rtn中会有当天的数据, 故需要剔除最后一天的数据
         bench_rtn = hist_bench_df[["日期", "涨跌幅"]].copy()
         bench_rtn["涨跌幅"] = bench_rtn["涨跌幅"] / 100
         bench_rtn = bench_rtn.set_index("日期").reindex(
             index=rtn.index.strftime("%Y-%m-%d")
         )
-        win_ratio = ((rtn.values[-250:, :] - bench_rtn.values[-250:]) > 0).mean(axis=1)
+        win_ratio = ((rtn.values[-250:-1, :] - bench_rtn.values[-250:-1]) > 0).mean(
+            axis=1
+        )
         combined_fig.append(
             plot_line_chart(
                 x_data=bench_rtn.index.values[-250:],

@@ -9,6 +9,7 @@ import concurrent.futures
 
 bench_hist_load_dict = {
     # 中证指数
+    "000985": ak.stock_zh_index_hist_csindex,
     "000300": ak.stock_zh_index_hist_csindex,
     "000905": ak.stock_zh_index_hist_csindex,
     "000852": ak.stock_zh_index_hist_csindex,
@@ -18,7 +19,9 @@ bench_hist_load_dict = {
 }
 
 
-def load_bench_cons_csindex(bench_symbol: Literal["000300", "000905", "000852"]):
+def load_bench_cons_csindex(
+    bench_symbol: Literal["000985", "000300", "000905", "000852"]
+):
     "中证指数成分股"
     data = ak.index_stock_cons_csindex(symbol=bench_symbol)
     cons_df = data.copy().rename(
@@ -32,7 +35,7 @@ def load_bench_cons_csindex(bench_symbol: Literal["000300", "000905", "000852"])
 
 def load_bench_hist(
     func,
-    bench_symbol: Literal["000300", "000905", "000852"],
+    bench_symbol: Literal["000985", "000300", "000905", "000852"],
 ) -> pd.DataFrame:
     hist_df = func(
         symbol=bench_symbol,
@@ -52,7 +55,7 @@ def update_hist_em(hist_985_path: Path = Path(r"data/hist_985.h5")):
     volume = h5db.load_pivotDF_from_h5data("volume")
     volumeRmb = h5db.load_pivotDF_from_h5data("volumeRmb")
     h5db.f_object_handle.close()
-
+    # TODO: 如果有新增的股票代码，需要更新symbol; 故应当从cons中获取
     symbol = [str(i).zfill(6) for i in rtn.columns.to_list()]
     # load data from em
     print("Updating data from em...")
@@ -119,6 +122,7 @@ def update_hist_em(hist_985_path: Path = Path(r"data/hist_985.h5")):
             pivotKey="volumeRmb",
         )
 
+
 def _update_single_hist_em(symbol: str, start_date: str, end_date: str):
     assert len(symbol) == 6, "symbol must be 6 digits"
     data = ak.stock_zh_a_hist(
@@ -134,7 +138,7 @@ def _update_single_hist_em(symbol: str, start_date: str, end_date: str):
 if __name__ == "__main__":
     print("Updating daily data...")
     # 指数成分股,  仅支持中证指数
-    for symbol_i in ["000300", "000905", "000852"]:
+    for symbol_i in ["000985", "000300", "000905", "000852"]:
         load_bench_cons_csindex(symbol_i)
 
     # 指数daliy行情

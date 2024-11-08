@@ -64,7 +64,7 @@ def pivoted_df_insert_rows(exit_df: pd.DataFrame, add_df: pd.DataFrame):
 
 
 def load_bench_cons(
-    bench_symbol: Literal["000300", "000905", "000852"],
+    bench_symbol: Literal["000985", "000300", "000905", "000852"],
 ):
     cons_df = pd.read_csv(Path(f"data/cons_of_{bench_symbol}.csv"))
     return cons_df["cons_symbol"].to_list()
