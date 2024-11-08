@@ -10,13 +10,34 @@ from utils import (
     plot_dual_y_line_chart,
     plot_lines_chart,
 )
-
-# Load historical data for 沪深300
-
+from window import rolling_mean
 
 # Main execution and plotting
 if __name__ == "__main__":
     combined_fig = []
+    # Plot 指数成交金额
+    all_volumeRMB = []
+    for bench, name in {
+        "000300": "沪深300",
+        "000905": "中证500",
+        "000852": "中证1000",
+        "932000": "中证2000",
+    }.items():
+        volumeRMB = pd.read_csv(Path(f"data/hist_of_{bench}.csv"))["成交金额"].values
+        # 保留两位小数
+        all_volumeRMB.append(rolling_mean(volumeRMB, 5)[249:].round(2))
+
+    combined_fig.append(
+        plot_lines_chart(
+            x_data=pd.read_csv(Path(f"data/hist_of_{bench}.csv"))["日期"].values[249:],
+            ys_data=all_volumeRMB,
+            names=[
+                f"{name}成交金额MA5"
+                for name in ["沪深300", "中证500", "中证1000", "中证2000"]
+            ],
+            range_start=75,
+        )
+    )
 
     # Plot 指数成交金额
     for bench, name in {
@@ -24,6 +45,7 @@ if __name__ == "__main__":
         "000300": "沪深300",
         "000905": "中证500",
         "000852": "中证1000",
+        "932000": "中证2000",
     }.items():
         hist_bench_df = pd.read_csv(Path(f"data/hist_of_{bench}.csv"))
         # Calculate and plot 250-day rolling 成交金额 percentile
@@ -42,10 +64,16 @@ if __name__ == "__main__":
         vol = rtn.std(axis=1).to_frame()
         percentile = calculate_percentile(vol[0].values, 250)
         combined_fig.append(
-            plot_line_chart(
+            plot_lines_chart(
                 x_data=vol.index.strftime("%Y-%m-%d")[249:],
-                y_data=percentile,
-                name=f"{name}成分股波动率分位数",
+                ys_data=[
+                    percentile,
+                    rolling_mean(percentile, 5).round(3),
+                ],
+                names=[
+                    f"{name}成分股波动率分位数",
+                    f"{name}成分股波动率分位数MA5",
+                ],
                 range_start=75,
             )
         )

@@ -13,6 +13,7 @@ bench_hist_load_dict = {
     "000300": ak.stock_zh_index_hist_csindex,
     "000905": ak.stock_zh_index_hist_csindex,
     "000852": ak.stock_zh_index_hist_csindex,
+    "932000": ak.stock_zh_index_hist_csindex,
     # 国证指数
     "399370": ak.index_hist_cni,  # 国证成长
     "399371": ak.index_hist_cni,  # 国证价值
@@ -20,7 +21,7 @@ bench_hist_load_dict = {
 
 
 def load_bench_cons_csindex(
-    bench_symbol: Literal["000985", "000300", "000905", "000852"]
+    bench_symbol: Literal["000985", "000300", "000905", "000852", "932000"]
 ):
     "中证指数成分股"
     data = ak.index_stock_cons_csindex(symbol=bench_symbol)
@@ -35,7 +36,7 @@ def load_bench_cons_csindex(
 
 def load_bench_hist(
     func,
-    bench_symbol: Literal["000985", "000300", "000905", "000852"],
+    bench_symbol: Literal["000985", "000300", "000905", "000852", "932000"],
 ) -> pd.DataFrame:
     hist_df = func(
         symbol=bench_symbol,
@@ -138,7 +139,7 @@ def _update_single_hist_em(symbol: str, start_date: str, end_date: str):
 if __name__ == "__main__":
     print("Updating daily data...")
     # 指数成分股,  仅支持中证指数
-    for symbol_i in ["000985", "000300", "000905", "000852"]:
+    for symbol_i in ["000985", "000300", "000905", "000852", "932000"]:
         load_bench_cons_csindex(symbol_i)
 
     # 指数daliy行情
