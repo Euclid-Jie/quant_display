@@ -146,5 +146,5 @@ if __name__ == "__main__":
     for symbol_i, func in bench_hist_load_dict.items():
         load_bench_hist(func, symbol_i)
 
-    # # 更新中证全指数行情
+    # 更新中证全指数行情
     update_hist_em(hist_985_path=Path(r"data/demo.h5"))

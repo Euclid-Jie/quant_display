@@ -9,6 +9,7 @@ from utils import (
     plot_line_chart,
     plot_dual_y_line_chart,
     plot_lines_chart,
+    load_speed_of_indus,
 )
 from window import rolling_mean
 
@@ -18,6 +19,7 @@ if __name__ == "__main__":
     # Plot 指数成交金额
     all_volumeRMB = []
     for bench, name in {
+        "000985": "中证全指",
         "000300": "沪深300",
         "000905": "中证500",
         "000852": "中证1000",
@@ -26,6 +28,9 @@ if __name__ == "__main__":
         volumeRMB = pd.read_csv(Path(f"data/hist_of_{bench}.csv"))["成交金额"].values
         # 保留两位小数
         all_volumeRMB.append(rolling_mean(volumeRMB, 5)[249:].round(2))
+        print(
+            f"{name}本周平均成交金额{all_volumeRMB[-1][-1]},较上周({all_volumeRMB[-1][-6]}) {'上涨' if all_volumeRMB[-1][-1] > all_volumeRMB[-1][-6] else '下跌'}"
+        )
 
     combined_fig.append(
         plot_lines_chart(
@@ -33,7 +38,7 @@ if __name__ == "__main__":
             ys_data=all_volumeRMB,
             names=[
                 f"{name}成交金额MA5"
-                for name in ["沪深300", "中证500", "中证1000", "中证2000"]
+                for name in ["中证全指", "沪深300", "中证500", "中证1000", "中证2000"]
             ],
             range_start=75,
         )
@@ -63,6 +68,9 @@ if __name__ == "__main__":
         rtn = load_hist_data(indicator="rtn", symols=load_bench_cons(bench))
         vol = rtn.std(axis=1).to_frame()
         percentile = calculate_percentile(vol[0].values, 250)
+        print(
+            f"{name}本周平均波动率分位数{rolling_mean(percentile, 5).round(3)[-1]},较上周({rolling_mean(percentile, 5).round(3)[-6]}){'上涨' if rolling_mean(percentile, 5).round(3)[-1] > rolling_mean(percentile, 5).round(3)[-6] else '下跌'}"
+        )
         combined_fig.append(
             plot_lines_chart(
                 x_data=vol.index.strftime("%Y-%m-%d")[249:],
@@ -84,32 +92,32 @@ if __name__ == "__main__":
         bench_rtn = bench_rtn.set_index("日期").reindex(
             index=rtn.index.strftime("%Y-%m-%d")
         )
-        win_ratio = ((rtn.values[-250:-1, :] - bench_rtn.values[-250:-1]) > 0).mean(
-            axis=1
+        win_ratio = ((rtn.values[-250:, :] - bench_rtn.values[-250:]) > 0).mean(axis=1)
+        print(
+            f"{name}本周平均赚钱效应{rolling_mean(win_ratio, 5).round(3)[-1]},较上周({rolling_mean(win_ratio, 5).round(3)[-6]}){'上涨' if rolling_mean(win_ratio, 5).round(3)[-1] > rolling_mean(win_ratio, 5).round(3)[-6] else '下跌'}"
         )
         combined_fig.append(
-            plot_line_chart(
+            plot_lines_chart(
                 x_data=bench_rtn.index.values[-250:],
-                y_data=win_ratio,
-                name=f"{name}赚钱效应",
+                ys_data=[win_ratio, rolling_mean(win_ratio, 5).round(3)],
+                names=[f"{name}赚钱效应", f"{name}赚钱效应MA5"],
                 range_start=75,
             )
         )
 
-    # # Plot 大小盘相对强弱
-    # big_df = ak.index_hist_sw(symbol="801811", period="day")
-    # small_df = ak.index_hist_sw(symbol="801813", period="day")
-    # big_df["rtn"] = big_df["收盘"].pct_change()
-    # small_df["rtn"] = small_df["收盘"].pct_change()
-    # big_de_small = big_df["rtn"] - small_df["rtn"]
-    # combined_fig.append(
-    #     plot_line_chart(
-    #         big_df["日期"].values[-100:],
-    #         big_de_small.values[-100:],
-    #         "大小盘相对强弱",
-    #         "大小盘相对强弱",
-    #     )
-    # )
+    # Plot 大小盘相对强弱
+    big_df = pd.read_csv(Path(r"data/801811.SI.csv"))
+    small_df = pd.read_csv(Path(r"data/801813.SI.csv"))
+    big_df["rtn"] = big_df["PCT_CHG"].values / 100
+    small_df["rtn"] = small_df["PCT_CHG"].values / 100
+    combined_fig.append(
+        plot_line_chart(
+            x_data=big_df["日期"].values[-100:],
+            y_data=(big_df["rtn"] - small_df["rtn"]).values[-100:].round(3),
+            name="大小盘相对强弱",
+            range_start=75,
+        )
+    )
 
     # Plot 价值VS成长相对强弱
     cni_399371 = pd.read_csv(Path(r"data/hist_of_399371.csv"))
@@ -119,9 +127,28 @@ if __name__ == "__main__":
     combined_fig.append(
         plot_line_chart(
             x_data=cni_399371["日期"].values[-100:],
-            y_data=cni_399371["rtn"].values[-100:] - cni_399370["rtn"].values[-100:],
+            y_data=(cni_399371["rtn"] - cni_399370["rtn"]).values[-100:].round(3),
             name="价值VS成长相对强弱",
             range_start=75,
+        )
+    )
+
+    # 行业轮动
+    speed_of_idus_monthly, speed_of_idus_weekly = load_speed_of_indus(Path(r"data/sw1"))
+    combined_fig.append(
+        plot_lines_chart(
+            x_data=speed_of_idus_monthly.index[-100:],
+            ys_data=[
+                speed_of_idus_monthly.iloc[-100:, 0].values.round(3),
+                speed_of_idus_weekly.iloc[-100:, 0].values.round(3),
+            ],
+            names=["行业轮动速度(月)", "行业轮动速度(周)"],
+            range_start=75,
+            lower_bound=min(
+                min(speed_of_idus_monthly.iloc[-100:, 0].values),
+                min(speed_of_idus_weekly.iloc[-100:, 0].values),
+            )
+            - 0.02,
         )
     )
 

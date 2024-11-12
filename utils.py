@@ -23,6 +23,7 @@ __all__ = [
     "load_hist_data",
     "load_bench_cons",
     "calculate_percentile",
+    "load_speed_of_indus"
 ]
 
 
@@ -182,6 +183,8 @@ def plot_lines_chart(
     names: List[str],
     range_start: int = 0,
     range_end: int = 100,
+    lower_bound: float = None,
+    up_bound: float = None,
 ):
     assert len(ys_data) == len(names), "Length of ys_data and names should be the same"
     line = Line(
@@ -196,7 +199,7 @@ def plot_lines_chart(
 
     line.set_global_opts(
         xaxis_opts=opts.AxisOpts(type_="category"),
-        yaxis_opts=opts.AxisOpts(type_="value"),
+        yaxis_opts=opts.AxisOpts(type_="value", min_=lower_bound, max_=up_bound),
         legend_opts=opts.LegendOpts(
             textstyle_opts=opts.TextStyleOpts(font_weight="bold", font_size=20)
         ),
@@ -273,3 +276,62 @@ def plot_dual_y_line_chart(
     )
 
     return line
+
+
+def load_speed_of_indus(Sw_data_Folder: Path = Path(r"data/sw1")):
+    # 读取数据
+    all_hist_sw1_df = pd.concat(
+        [
+            pd.read_csv(indus_i).assign(CODE=indus_i.stem)
+            for indus_i in Sw_data_Folder.glob("*.csv")
+        ],
+        axis=0,
+    )
+
+    all_hist_sw1_df["rtn"] = all_hist_sw1_df["PCT_CHG"] / 100
+    all_hist_sw1_df["weekly_rtn"] = (
+        all_hist_sw1_df.groupby("CODE")["rtn"]
+        .rolling(5)
+        .sum()
+        .reset_index(0, drop=True)
+    )
+    all_hist_sw1_df["monthly_rtn"] = (
+        all_hist_sw1_df.groupby("CODE")["rtn"]
+        .rolling(20)
+        .sum()
+        .reset_index(0, drop=True)
+    )
+    all_hist_sw1_df.dropna(subset=["monthly_rtn"], inplace=True)
+    all_hist_sw1_df["rank_of_rtn"] = all_hist_sw1_df.groupby("日期")["rtn"].rank(
+        ascending=True, pct=True
+    )
+    all_hist_sw1_df["rank_of_weekly_rtn"] = all_hist_sw1_df.groupby("日期")[
+        "weekly_rtn"
+    ].rank(ascending=True, pct=True)
+    all_hist_sw1_df["rank_of_monthly_rtn"] = all_hist_sw1_df.groupby("日期")[
+        "monthly_rtn"
+    ].rank(ascending=True, pct=True)
+
+    all_hist_sw1_df["std_of_rankMonthlyRtn"] = (
+        all_hist_sw1_df.groupby("日期")["rank_of_monthly_rtn"]
+        .rolling(window=20)
+        .std()
+        .reset_index(0, drop=True)
+        .values
+    )
+    all_hist_sw1_df["std_of_rankWeeklyRtn"] = (
+        all_hist_sw1_df.groupby("日期")["rank_of_weekly_rtn"]
+        .rolling(window=20)
+        .std()
+        .reset_index(0, drop=True)
+        .values
+    )
+    all_hist_sw1_df.dropna(subset=["std_of_rankMonthlyRtn"], inplace=True)
+
+    speed_of_idus_monthly = (
+        all_hist_sw1_df.groupby("日期")["std_of_rankMonthlyRtn"].mean().to_frame()
+    )
+    speed_of_idus_weekly = (
+        all_hist_sw1_df.groupby("日期")["std_of_rankWeeklyRtn"].mean().to_frame()
+    )
+    return speed_of_idus_monthly, speed_of_idus_weekly
