@@ -39,11 +39,11 @@ class BarraData:
     ):
         # Load Barra data
         if type == "cne5":
-            data = pd.read_csv(self.save_folder.joinpath("cne5.csv"))
+            data = pd.read_csv(self.save_folder.joinpath("cne5.csv")).dropna()
         elif type == "cne6":
-            data = pd.read_csv(self.save_folder.joinpath("cne6.csv"))
+            data = pd.read_csv(self.save_folder.joinpath("cne6.csv")).dropna()
         elif type == "future":
-            data = pd.read_csv(self.save_folder.joinpath("future.csv"))
+            data = pd.read_csv(self.save_folder.joinpath("future.csv")).dropna()
         else:
             raise ValueError("type should be 'cne5' or 'cne6' or 'future'")
         data["日期"] = pd.to_datetime(data["日期"])
@@ -71,23 +71,34 @@ class BarraData:
                 value.rename(columns={"return": key}, inplace=True)
                 value.drop(columns=["date"], inplace=True)
                 all_data = pd.concat([all_data, value], axis=1)
-            all_data.to_csv(self.save_folder / f"{type}.csv")
-        else:
-            exited_data = pd.read_csv(self.save_folder / f"{type}.csv")
-            least_date = np.datetime64(exited_data["日期"].values[-1])
-            url = self.url_dict[type].format(
-                np.datetime_as_string(least_date, unit="D"),
-                np.datetime_as_string(end_date, unit="D"),
+            all_data.reset_index(drop=False, inplace=True)
+            all_data.to_csv(
+                self.save_folder / f"{type}.csv", index=False, encoding="utf-8-sig"
             )
-            for key, value in data.items():
-                value = pd.DataFrame(value)
-                value["日期"] = pd.to_datetime(value["date"])
-                value.set_index("日期", inplace=True)
-                value.rename(columns={"return": key}, inplace=True)
-                value.drop(columns=["date"], inplace=True)
-                exited_data = pd.concat([exited_data, value], axis=1)
-            updated_data = pd.concat([exited_data, all_data], axis=0).drop_duplicates()
-            updated_data.to_csv(self.save_folder / f"{type}.csv")
+        else:
+            exited_data = self.load_data(type)
+            least_date = np.datetime64(exited_data["日期"].values[-1])
+            if least_date < end_date:
+                url = self.url_dict[type].format(
+                    np.datetime_as_string(least_date, unit="D"),
+                    np.datetime_as_string(end_date, unit="D"),
+                )
+                data = requests.get(url, headers=self.headers).json()["data"]
+                all_data = pd.DataFrame()
+                for key, value in data.items():
+                    value = pd.DataFrame(value)
+                    value["日期"] = pd.to_datetime(value["date"])
+                    value.set_index("日期", inplace=True)
+                    value.rename(columns={"return": key}, inplace=True)
+                    value.drop(columns=["date"], inplace=True)
+                    all_data = pd.concat([all_data, value], axis=1)
+                all_data.reset_index(drop=False, inplace=True)
+                updated_data = pd.concat(
+                    [exited_data, all_data], axis=0
+                ).drop_duplicates()
+                updated_data.to_csv(
+                    self.save_folder / f"{type}.csv", index=False, encoding="utf-8-sig"
+                )
 
 
 if __name__ == "__main__":
