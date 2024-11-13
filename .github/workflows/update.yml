@@ -26,6 +26,7 @@ jobs:
         run: |
           pip install -r ./requirements.txt
           python3 ./data_update.py
+          python3 ./barra_data.py
 
       # run update_display for 15min schedule
       - name: run update_display

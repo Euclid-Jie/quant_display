@@ -13,12 +13,29 @@ from utils import (
     load_speed_of_indus,
 )
 from window import rolling_mean
+from barra_data import BarraData
 
 display_dict = {}
 
 # Main execution and plotting
 if __name__ == "__main__":
     combined_fig = []
+    # barra 风格因子
+    barra_data = BarraData(Path("data"))
+    cne5 = barra_data.load_data("cne5").iloc[-20:]
+    cne5["日期"] = np.datetime_as_string(cne5["日期"], unit="D")
+    cne5.set_index("日期", inplace=True)
+    cne5.iloc[0, :] = 0
+    cne5_nav = (1 + cne5).cumprod()
+    combined_fig.append(
+        plot_lines_chart(
+            x_data=cne5_nav.index,
+            ys_data=[cne5_nav[col].values.round(3) for col in cne5_nav.columns],
+            names=[col for col in cne5_nav.columns],
+            lower_bound=np.round(min(cne5_nav.min().values) - 0.02, 2),
+        )
+    )
+
     # Plot 指数成交金额
     all_volumeRMB = []
     for bench, name in {
@@ -262,6 +279,7 @@ if __name__ == "__main__":
         <body>
             <div id="timestamp">Last Updated: {datetime.now(ZoneInfo('Asia/Shanghai')).strftime("%Y-%m-%d %H:%M:%S")}</div>
             {display_df.T.to_html(render_links=True)}
+            {cne5.iloc[-5:].to_html()}
             {"".join([chart.render_embed() for chart in combined_fig])}
         </body>
     </html>"""
