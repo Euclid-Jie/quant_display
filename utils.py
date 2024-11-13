@@ -13,8 +13,10 @@ import urllib.parse
 import json
 import uuid
 from typing import List
-from pyecharts.charts import Line, Grid
+from pyecharts.charts import Line
 from pyecharts import options as opts
+from barra_data import BarraData
+from pathlib import Path
 
 __all__ = [
     "load_bais",
@@ -24,6 +26,7 @@ __all__ = [
     "load_bench_cons",
     "calculate_percentile",
     "load_speed_of_indus",
+    "load_speed_of_barra",
 ]
 
 
@@ -313,14 +316,14 @@ def load_speed_of_indus(Sw_data_Folder: Path = Path(r"data/sw1")):
     ].rank(ascending=True, pct=True)
 
     all_hist_sw1_df["std_of_rankMonthlyRtn"] = (
-        all_hist_sw1_df.groupby("日期")["rank_of_monthly_rtn"]
+        all_hist_sw1_df.groupby("CODE")["rank_of_monthly_rtn"]
         .rolling(window=20)
         .std()
         .reset_index(0, drop=True)
         .values
     )
     all_hist_sw1_df["std_of_rankWeeklyRtn"] = (
-        all_hist_sw1_df.groupby("日期")["rank_of_weekly_rtn"]
+        all_hist_sw1_df.groupby("CODE")["rank_of_weekly_rtn"]
         .rolling(window=20)
         .std()
         .reset_index(0, drop=True)
@@ -335,3 +338,47 @@ def load_speed_of_indus(Sw_data_Folder: Path = Path(r"data/sw1")):
         all_hist_sw1_df.groupby("日期")["std_of_rankWeeklyRtn"].mean().to_frame()
     )
     return speed_of_idus_monthly.round(3), speed_of_idus_weekly.round(3)
+
+
+def load_speed_of_barra(save_folder=Path("data")):
+    demo = BarraData(save_folder=save_folder)
+    cne5 = demo.load_data("cne5")
+    cne5 = cne5.melt(id_vars=["日期"], var_name="barra", value_name="rtn").sort_values(
+        ["日期", "barra"]
+    )
+    cne5["weekly_rtn"] = (
+        cne5.groupby("barra")["rtn"].rolling(5).sum().reset_index(0, drop=True)
+    )
+    cne5["monthly_rtn"] = (
+        cne5.groupby("barra")["rtn"].rolling(20).sum().reset_index(0, drop=True)
+    )
+    cne5.dropna(subset=["monthly_rtn"], inplace=True)
+    cne5["rank_of_rtn"] = cne5.groupby("日期")["rtn"].rank(ascending=True, pct=True)
+    cne5["rank_of_weekly_rtn"] = cne5.groupby("日期")["weekly_rtn"].rank(
+        ascending=True, pct=True
+    )
+    cne5["rank_of_monthly_rtn"] = cne5.groupby("日期")["monthly_rtn"].rank(
+        ascending=True, pct=True
+    )
+    cne5["std_of_rankMonthlyRtn"] = (
+        cne5.groupby("barra")["rank_of_monthly_rtn"]
+        .rolling(window=20)
+        .std()
+        .reset_index(0, drop=True)
+        .values
+    )
+    cne5["std_of_rankWeeklyRtn"] = (
+        cne5.groupby("barra")["rank_of_weekly_rtn"]
+        .rolling(window=20)
+        .std()
+        .reset_index(0, drop=True)
+        .values
+    )
+    cne5.dropna(subset=["std_of_rankMonthlyRtn"], inplace=True)
+    speed_of_barra_monthly = (
+        cne5.groupby("日期")["std_of_rankMonthlyRtn"].mean().to_frame()
+    )
+    speed_of_barra_weekly = (
+        cne5.groupby("日期")["std_of_rankWeeklyRtn"].mean().to_frame()
+    )
+    return speed_of_barra_monthly.round(3), speed_of_barra_weekly.round(3)

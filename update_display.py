@@ -11,6 +11,7 @@ from utils import (
     plot_dual_y_line_chart,
     plot_lines_chart,
     load_speed_of_indus,
+    load_speed_of_barra,
 )
 from window import rolling_mean
 from barra_data import BarraData
@@ -206,6 +207,36 @@ if __name__ == "__main__":
             "行业轮动速度(周)": [
                 speed_of_idus_weekly.iloc[-1, 0],
                 speed_of_idus_weekly.iloc[-6, 0],
+            ],
+        }
+    )
+    # barra 轮动速度
+    speed_of_barra_monthly, speed_of_barra_weekly = load_speed_of_barra()
+    combined_fig.append(
+        plot_lines_chart(
+            x_data=np.datetime_as_string(speed_of_barra_monthly.index[-100:], unit="D"),
+            ys_data=[
+                speed_of_barra_monthly.iloc[-100:, 0].values,
+                speed_of_barra_weekly.iloc[-100:, 0].values,
+            ],
+            names=["Barra轮动速度(月)", "Barra轮动速度(周)"],
+            range_start=75,
+            lower_bound=min(
+                min(speed_of_barra_monthly.iloc[-100:, 0].values),
+                min(speed_of_barra_weekly.iloc[-100:, 0].values),
+            )
+            - 0.02,
+        )
+    )
+    display_dict.update(
+        {
+            "Barra轮动速度(月)": [
+                speed_of_barra_monthly.iloc[-1, 0],
+                speed_of_barra_monthly.iloc[-6, 0],
+            ],
+            "Barra轮动速度(周)": [
+                speed_of_barra_weekly.iloc[-1, 0],
+                speed_of_barra_weekly.iloc[-6, 0],
             ],
         }
     )
