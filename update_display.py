@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -13,6 +14,8 @@ from utils import (
 )
 from window import rolling_mean
 
+display_dict = {}
+
 # Main execution and plotting
 if __name__ == "__main__":
     combined_fig = []
@@ -26,10 +29,15 @@ if __name__ == "__main__":
         "932000": "中证2000",
     }.items():
         volumeRMB = pd.read_csv(Path(f"data/hist_of_{bench}.csv"))["成交金额"].values
-        # 保留两位小数
-        all_volumeRMB.append(rolling_mean(volumeRMB, 5)[249:].round(2))
-        print(
-            f"{name}本周平均成交金额{all_volumeRMB[-1][-1]},较上周({all_volumeRMB[-1][-6]}) {'上涨' if all_volumeRMB[-1][-1] > all_volumeRMB[-1][-6] else '下跌'}"
+        weekly_mean_volumeRMB = rolling_mean(volumeRMB, 5).round(2)[249:]
+        all_volumeRMB.append(weekly_mean_volumeRMB)
+        display_dict.update(
+            {
+                f"{name}成交金额MA5": [
+                    weekly_mean_volumeRMB[-1],
+                    weekly_mean_volumeRMB[-6],
+                ]
+            }
         )
 
     combined_fig.append(
@@ -68,15 +76,21 @@ if __name__ == "__main__":
         rtn = load_hist_data(indicator="rtn", symols=load_bench_cons(bench))
         vol = rtn.std(axis=1).to_frame()
         percentile = calculate_percentile(vol[0].values, 250)
-        print(
-            f"{name}本周平均波动率分位数{rolling_mean(percentile, 5).round(3)[-1]},较上周({rolling_mean(percentile, 5).round(3)[-6]}){'上涨' if rolling_mean(percentile, 5).round(3)[-1] > rolling_mean(percentile, 5).round(3)[-6] else '下跌'}"
+        weekly_mean_percentile = rolling_mean(percentile, 5).round(3)
+        display_dict.update(
+            {
+                f"{name}波动率分位数MA5": [
+                    weekly_mean_percentile[-1],
+                    weekly_mean_percentile[-6],
+                ]
+            }
         )
         combined_fig.append(
             plot_lines_chart(
                 x_data=vol.index.strftime("%Y-%m-%d")[249:],
                 ys_data=[
                     percentile,
-                    rolling_mean(percentile, 5).round(3),
+                    weekly_mean_percentile.round(3),
                 ],
                 names=[
                     f"{name}成分股波动率分位数",
@@ -93,9 +107,6 @@ if __name__ == "__main__":
             index=rtn.index.strftime("%Y-%m-%d")
         )
         win_ratio = ((rtn.values[-250:, :] - bench_rtn.values[-250:]) > 0).mean(axis=1)
-        print(
-            f"{name}本周平均赚钱效应{rolling_mean(win_ratio, 5).round(3)[-1]},较上周({rolling_mean(win_ratio, 5).round(3)[-6]}){'上涨' if rolling_mean(win_ratio, 5).round(3)[-1] > rolling_mean(win_ratio, 5).round(3)[-6] else '下跌'}"
-        )
         combined_fig.append(
             plot_lines_chart(
                 x_data=bench_rtn.index.values[-250:],
@@ -110,13 +121,22 @@ if __name__ == "__main__":
     small_df = pd.read_csv(Path(r"data/801813.SI.csv"))
     big_df["rtn"] = big_df["PCT_CHG"].values / 100
     small_df["rtn"] = small_df["PCT_CHG"].values / 100
+    big_vs_small = big_df["rtn"] - small_df["rtn"]
     combined_fig.append(
         plot_line_chart(
             x_data=big_df["日期"].values[-100:],
-            y_data=(big_df["rtn"] - small_df["rtn"]).values[-100:].round(3),
+            y_data=big_vs_small.values[-100:].round(3),
             name="大小盘相对强弱",
             range_start=75,
         )
+    )
+    display_dict.update(
+        {
+            "大小盘相对强弱": [
+                big_vs_small.values[-1],
+                big_vs_small.values[-6],
+            ]
+        }
     )
 
     # Plot 价值VS成长相对强弱
@@ -124,13 +144,22 @@ if __name__ == "__main__":
     cni_399370 = pd.read_csv(Path(r"data/hist_of_399370.csv"))
     cni_399371["rtn"] = cni_399371["收盘价"].pct_change()
     cni_399370["rtn"] = cni_399370["收盘价"].pct_change()
+    value_vs_growth = cni_399371["rtn"] - cni_399370["rtn"]
     combined_fig.append(
         plot_line_chart(
             x_data=cni_399371["日期"].values[-100:],
-            y_data=(cni_399371["rtn"] - cni_399370["rtn"]).values[-100:].round(3),
+            y_data=value_vs_growth.values[-100:].round(3),
             name="价值VS成长相对强弱",
             range_start=75,
         )
+    )
+    display_dict.update(
+        {
+            "价值VS成长相对强弱": [
+                value_vs_growth.values[-1],
+                value_vs_growth.values[-6],
+            ]
+        }
     )
 
     # 行业轮动
@@ -139,8 +168,8 @@ if __name__ == "__main__":
         plot_lines_chart(
             x_data=speed_of_idus_monthly.index[-100:],
             ys_data=[
-                speed_of_idus_monthly.iloc[-100:, 0].values.round(3),
-                speed_of_idus_weekly.iloc[-100:, 0].values.round(3),
+                speed_of_idus_monthly.iloc[-100:, 0].values,
+                speed_of_idus_weekly.iloc[-100:, 0].values,
             ],
             names=["行业轮动速度(月)", "行业轮动速度(周)"],
             range_start=75,
@@ -150,6 +179,18 @@ if __name__ == "__main__":
             )
             - 0.02,
         )
+    )
+    display_dict.update(
+        {
+            "行业轮动速度(月)": [
+                speed_of_idus_monthly.iloc[-1, 0],
+                speed_of_idus_monthly.iloc[-6, 0],
+            ],
+            "行业轮动速度(周)": [
+                speed_of_idus_weekly.iloc[-1, 0],
+                speed_of_idus_weekly.iloc[-6, 0],
+            ],
+        }
     )
 
     # Plot IC and IM data with dual Y-axis
@@ -164,7 +205,26 @@ if __name__ == "__main__":
             range_start=75,
         )
     )
-
+    display_dict.update(
+        {
+            "IC年化基差(%)": [
+                IC_data["年化基差(%)"].values[-1],
+                IC_data["年化基差(%)"].values[-6],
+            ],
+            "IM年化基差(%)": [
+                IM_data["年化基差(%)"].values[-1],
+                IM_data["年化基差(%)"].values[-6],
+            ],
+        }
+    )
+    display_df = pd.DataFrame(display_dict, index=["当期", "上期(T-5)"]).T
+    display_df["变化"] = display_df["当期"] - display_df["上期(T-5)"]
+    display_df["变化%"] = display_df["变化"] / display_df["上期(T-5)"]
+    display_df["变化%"] = display_df["变化%"].apply(lambda x: f"{x:.2%}")
+    # 如果 "当期" 或者 "上期(T-5)" 为负数, 则 "变化%" 为 NULL
+    display_df.loc[
+        (display_df["当期"] < 0) | (display_df["上期(T-5)"] < 0), "变化%"
+    ] = np.nan
     html = f"""<html>
         <head>
             <meta charset="UTF-8">
@@ -201,6 +261,7 @@ if __name__ == "__main__":
         </head>
         <body>
             <div id="timestamp">Last Updated: {datetime.now(ZoneInfo('Asia/Shanghai')).strftime("%Y-%m-%d %H:%M:%S")}</div>
+            {display_df.T.to_html(render_links=True)}
             {"".join([chart.render_embed() for chart in combined_fig])}
         </body>
     </html>"""

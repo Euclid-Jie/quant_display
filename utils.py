@@ -23,7 +23,7 @@ __all__ = [
     "load_hist_data",
     "load_bench_cons",
     "calculate_percentile",
-    "load_speed_of_indus"
+    "load_speed_of_indus",
 ]
 
 
@@ -334,4 +334,4 @@ def load_speed_of_indus(Sw_data_Folder: Path = Path(r"data/sw1")):
     speed_of_idus_weekly = (
         all_hist_sw1_df.groupby("日期")["std_of_rankWeeklyRtn"].mean().to_frame()
     )
-    return speed_of_idus_monthly, speed_of_idus_weekly
+    return speed_of_idus_monthly.round(3), speed_of_idus_weekly.round(3)
