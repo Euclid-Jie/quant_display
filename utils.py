@@ -290,47 +290,25 @@ def load_speed_of_indus(Sw_data_Folder: Path = Path(r"data/sw1")):
         ],
         axis=0,
     )
-
     all_hist_sw1_df["rtn"] = all_hist_sw1_df["PCT_CHG"] / 100
-    all_hist_sw1_df["weekly_rtn"] = (
-        all_hist_sw1_df.groupby("CODE")["rtn"]
-        .rolling(5)
-        .sum()
-        .reset_index(0, drop=True)
-    )
-    all_hist_sw1_df["monthly_rtn"] = (
-        all_hist_sw1_df.groupby("CODE")["rtn"]
-        .rolling(20)
-        .sum()
-        .reset_index(0, drop=True)
-    )
-    all_hist_sw1_df.dropna(subset=["monthly_rtn"], inplace=True)
     all_hist_sw1_df["rank_of_rtn"] = all_hist_sw1_df.groupby("日期")["rtn"].rank(
         ascending=True, pct=True
     )
-    all_hist_sw1_df["rank_of_weekly_rtn"] = all_hist_sw1_df.groupby("日期")[
-        "weekly_rtn"
-    ].rank(ascending=True, pct=True)
-    all_hist_sw1_df["rank_of_monthly_rtn"] = all_hist_sw1_df.groupby("日期")[
-        "monthly_rtn"
-    ].rank(ascending=True, pct=True)
-
     all_hist_sw1_df["std_of_rankMonthlyRtn"] = (
-        all_hist_sw1_df.groupby("CODE")["rank_of_monthly_rtn"]
+        all_hist_sw1_df.groupby("CODE")["rank_of_rtn"]
         .rolling(window=20)
         .std()
         .reset_index(0, drop=True)
         .values
     )
     all_hist_sw1_df["std_of_rankWeeklyRtn"] = (
-        all_hist_sw1_df.groupby("CODE")["rank_of_weekly_rtn"]
-        .rolling(window=20)
+        all_hist_sw1_df.groupby("CODE")["rank_of_rtn"]
+        .rolling(window=5)
         .std()
         .reset_index(0, drop=True)
         .values
     )
     all_hist_sw1_df.dropna(subset=["std_of_rankMonthlyRtn"], inplace=True)
-
     speed_of_idus_monthly = (
         all_hist_sw1_df.groupby("日期")["std_of_rankMonthlyRtn"].mean().to_frame()
     )
@@ -346,30 +324,17 @@ def load_speed_of_barra(save_folder=Path("data")):
     cne5 = cne5.melt(id_vars=["日期"], var_name="barra", value_name="rtn").sort_values(
         ["日期", "barra"]
     )
-    cne5["weekly_rtn"] = (
-        cne5.groupby("barra")["rtn"].rolling(5).sum().reset_index(0, drop=True)
-    )
-    cne5["monthly_rtn"] = (
-        cne5.groupby("barra")["rtn"].rolling(20).sum().reset_index(0, drop=True)
-    )
-    cne5.dropna(subset=["monthly_rtn"], inplace=True)
     cne5["rank_of_rtn"] = cne5.groupby("日期")["rtn"].rank(ascending=True, pct=True)
-    cne5["rank_of_weekly_rtn"] = cne5.groupby("日期")["weekly_rtn"].rank(
-        ascending=True, pct=True
-    )
-    cne5["rank_of_monthly_rtn"] = cne5.groupby("日期")["monthly_rtn"].rank(
-        ascending=True, pct=True
-    )
     cne5["std_of_rankMonthlyRtn"] = (
-        cne5.groupby("barra")["rank_of_monthly_rtn"]
+        cne5.groupby("barra")["rank_of_rtn"]
         .rolling(window=20)
         .std()
         .reset_index(0, drop=True)
         .values
     )
     cne5["std_of_rankWeeklyRtn"] = (
-        cne5.groupby("barra")["rank_of_weekly_rtn"]
-        .rolling(window=20)
+        cne5.groupby("barra")["rank_of_rtn"]
+        .rolling(window=5)
         .std()
         .reset_index(0, drop=True)
         .values
