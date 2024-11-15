@@ -91,7 +91,11 @@ if __name__ == "__main__":
             )
         )
         # 计算成分股波动率
-        rtn = load_hist_data(indicator="rtn", symols=load_bench_cons(bench))
+        rtn = load_hist_data(
+            indicator="rtn",
+            symols=load_bench_cons(bench),
+            end_date=np.datetime64("today") - np.timedelta64(1, "D"),
+        )
         vol = rtn.std(axis=1).to_frame()
         percentile = calculate_percentile(vol[0].values, 250)
         weekly_mean_percentile = rolling_mean(percentile, 5).round(3)
