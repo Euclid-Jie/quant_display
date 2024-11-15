@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     combined_fig.update(
         {
-            name: plot_lines_chart(
+            "base": plot_lines_chart(
                 x_data=pd.read_csv(Path(f"data/hist_of_{bench}.csv"))["日期"].values[
                     249:
                 ],
