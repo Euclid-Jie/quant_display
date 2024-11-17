@@ -167,8 +167,8 @@ if __name__ == "__main__":
         combined_fig.update(
             {
                 name: plot_lines_chart(
-                    x_data=bench_rtn.index.values[-250:].round(3),
-                    ys_data=[win_ratio, rolling_mean(win_ratio, 5).round(3)],
+                    x_data=bench_rtn.index.values[-250:],
+                    ys_data=[win_ratio.round(3), rolling_mean(win_ratio, 5).round(3)],
                     names=[f"{name}赚钱效应", f"{name}赚钱效应MA5"],
                     range_start=75,
                 )
