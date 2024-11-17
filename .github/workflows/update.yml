@@ -24,6 +24,8 @@ jobs:
       # run update_data for 15min schedule
       - name: run update_data
         run: |
+          git lfs install
+          git lfs pull
           pip install -r ./requirements.txt
           python3 ./data_update.py
           python3 ./barra_data.py
@@ -31,8 +33,7 @@ jobs:
       # run update_display for 15min schedule
       - name: run update_display
         run: |
-          git lfs install
-          git lfs pull
+
           python3 ./update_display.py
 
       # Stash changes before switching branches
