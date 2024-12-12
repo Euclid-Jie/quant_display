@@ -110,7 +110,7 @@ def load_bais(type=Literal["IF", "IC", "IM", "IH"]) -> pd.DataFrame:
     parsed_params["g_randomid"] = "randomid_" + str(uuid.uuid4().int)[:-11]
     updated_data = urllib.parse.urlencode(parsed_params, doseq=True)
     response = requests.post(
-        "http://web.tinysoft.com.cn:8080/website/loadContentDataAjax.tsl?ref=js",
+        "https://web.tinysoft.com.cn/website/loadContentDataAjax.tsl?ref=js",
         updated_data,
     )
 
